@@ -1,0 +1,38 @@
+service:
+  name: cloud-assignment
+
+frameworkVersion: ">=1.0.0 <2.0.0"
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+    printOutput: true
+    useDocker: true
+  defaultStage: dev
+  defaultRegion: us-east-1
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage, self:custom.defaultStage}
+  region: ${opt:region, self:custom.defaultRegion}
+  stackName: cloud-assignment-stack
+  timeout: 120
+
+package:
+  include:
+    - ./bin/**
+  exclude:
+    - ./**
+
+functions:
+  replaceOrganisation:
+    handler: bin/handller
+    events:
+      - http:
+          method: POST
+          path: /replaceOrganisation
+          cors: true
+
+plugins:
+  - serverless-offline
