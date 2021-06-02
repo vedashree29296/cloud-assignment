@@ -1,13 +1,9 @@
 service:
   name: cloud-assignment
 
-frameworkVersion: ">=1.0.0 <2.0.0"
+frameworkVersion: ">=2.0.0"
 
 custom:
-  serverless-offline:
-    httpPort: 4000
-    printOutput: true
-    useDocker: true
   defaultStage: dev
   defaultRegion: us-east-1
 
@@ -21,18 +17,21 @@ provider:
 
 package:
   include:
-    - ./bin/**
+    - ./bin/handler
   exclude:
-    - ./**
+    - ./*.go
+    - ./*.yml
+    - ./go.mod
+    - ./go.sum
+    - ./.github/**
+    - ./*.md
+    - ./.gitignore
 
 functions:
   replaceOrganisation:
-    handler: bin/handller
+    handler: bin/handler
     events:
       - http:
           method: POST
           path: /replaceOrganisation
           cors: true
-
-plugins:
-  - serverless-offline

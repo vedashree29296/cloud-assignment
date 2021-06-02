@@ -12,6 +12,7 @@ import (
 
 var err error
 var companies []string = []string{"Google", "Oracle", "Deloitte", "Microsoft", "Amazon"}
+var responseHeaders = map[string]string{"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"}
 
 func addCompanies(addedCompanies []interface{}) {
 
@@ -52,7 +53,7 @@ func computeString(str string) string {
 func returnErrorResponse(err error) events.APIGatewayProxyResponse {
 	response := map[string]interface{}{"data": nil, "error": err.Error()}
 	responseBody, err := json.Marshal(response)
-	return events.APIGatewayProxyResponse{StatusCode: 500, Body: string(responseBody)}
+	return events.APIGatewayProxyResponse{StatusCode: 500, Body: string(responseBody), Headers: responseHeaders}
 }
 
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -62,7 +63,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return returnErrorResponse(err), nil
 	}
 	text := inputReq["text"].(string)
-	addedCompanies := inputReq["companies"]
+	addedCompanies := inputReq["add_organisation"]
 	if addedCompanies != nil {
 		addCompanies(addedCompanies.([]interface{}))
 	}
@@ -73,7 +74,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if err != nil {
 		return returnErrorResponse(err), nil
 	}
-	return events.APIGatewayProxyResponse{StatusCode: 200, Body: string(responseBody)}, nil
+	return events.APIGatewayProxyResponse{StatusCode: 200, Body: string(responseBody), Headers: responseHeaders}, nil
 }
 func main() {
 	lambda.Start(Handler)

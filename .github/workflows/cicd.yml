@@ -3,12 +3,10 @@ name: cloud-assignment-dev-cd
 on:
   push:
     branches: [main]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  build:
+  cicd:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -19,7 +17,26 @@ jobs:
         with:
           go-version: "1.15"
 
-      - name: Build Binary for Go
+      - name: Build Binary for Go handler
         env:
           GO111MODULE: "on"
         run: env GOOS=linux go build -ldflags="-s -w" -o bin/handler main.go
+
+      - name: Setup Nodejs
+        uses: actions/setup-node@v1
+        with:
+          node-version: "14.x"
+
+      - name: Install serverless
+        run: npm install -g serverless
+
+      - name: Install NPM dependencies
+        run: npm install
+
+      - name: serverless deploy
+        uses: serverless/github-action@master
+        with:
+          args: deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
