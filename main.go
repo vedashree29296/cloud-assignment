@@ -12,34 +12,36 @@ import (
 )
 
 var err error
-var companies []string = []string{"Google", "Oracle", "Deloitte", "Microsoft", "Amazon"}
+var defaultOrgs []string = []string{"Google", "Oracle", "Deloitte", "Microsoft", "Amazon"}
 var responseHeaders = map[string]string{"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"}
 
 //addCompanies : add additional companies to the default list of companies.
-func addCompanies(addedCompanies []interface{}) {
+func addCompanies(addedCompanies []interface{}) []string {
+	var newOrgs []string = defaultOrgs
+
 	//convert to title case
 	for _, c := range addedCompanies {
 		s := strings.Title(strings.ToLower(c.(string)))
-		companies = append(companies, s)
+		newOrgs = append(newOrgs, s)
 	}
 	//remove duplicate values from list
 	seen := make(map[string]bool)
-	var newCompanies []string
-	for _, c := range companies {
+	for _, c := range newOrgs {
+		//if value is not present, add
 		if _, value := seen[c]; !value {
 			seen[c] = true
-			newCompanies = append(newCompanies, c)
+			newOrgs = append(newOrgs, c)
 		}
 
 	}
 	// use the new list
-	companies = newCompanies
+	return newOrgs
 }
 
 //build regex to find companies in the input string
-func regexBuilder() string {
+func regexBuilder(orgs []string) string {
 	var regexStr []string
-	for _, c := range companies {
+	for _, c := range orgs {
 		regexStr = append(regexStr, `\b`+c+`\b`)
 	}
 	// eg (\bGoogle\b|\bAmazon\b|\bOracle\b)
@@ -48,11 +50,8 @@ func regexBuilder() string {
 }
 
 //find and replace all company names
-func computeString(str string) string {
-	regexStr := regexBuilder()
+func computeString(str string, regexStr string) string {
 	r := regexp.MustCompile(regexStr)
-	words := r.FindAllString(str, -1)
-	fmt.Println(words)
 	s := r.ReplaceAllString(str, `$1©`)
 	return s
 }
@@ -72,12 +71,15 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if err != nil {
 		return returnErrorResponse(err)
 	}
+
 	// get the input string
 	text, ok := inputReq["text"].(string)
 	if !ok {
 		err := errors.New(fmt.Sprintf("got data of type %T but wanted string", inputReq["text"]))
 		return returnErrorResponse(err)
 	}
+
+	var orgs []string = defaultOrgs
 	// get additional companies if provided
 	addedCompanies := inputReq["add_organisation"]
 	if addedCompanies != nil {
@@ -85,10 +87,13 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			err := errors.New(fmt.Sprintf("got data of type %T but wanted []interface{}", inputReq["add_organisation"]))
 			return returnErrorResponse(err)
 		}
-		addCompanies(addedCompanies.([]interface{}))
+		orgs = addCompanies(addedCompanies.([]interface{}))
 	}
+
 	//find and replace
-	outputText := computeString(text)
+	regexStr := regexBuilder(orgs)
+	outputText := computeString(text, regexStr)
+
 	//send response back
 	response := map[string]interface{}{"data": outputText, "error": nil}
 	responseBody, err := json.Marshal(response)
